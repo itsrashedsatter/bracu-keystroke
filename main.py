@@ -3,7 +3,7 @@ from flask_cors import CORS
 import csv, os, json
 from datetime import datetime
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_folder='.')
 CORS(app)  # allow requests from any browser
 
 DATA_DIR = 'data'
