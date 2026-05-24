@@ -12,12 +12,11 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # ── Serve the frontend ──────────────────────────────────────
 @app.route('/')
 def index():
-    return send_from_directory('static', 'index.html')
+    return send_from_directory('.', 'index.html')
 
 @app.route('/<path:filename>')
 def static_files(filename):
-    return send_from_directory('static', filename)
-
+    return send_from_directory('.', filename)
 # ── Receive & save keystrokes ────────────────────────────────
 @app.route('/save', methods=['POST'])
 def save():
