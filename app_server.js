@@ -10,7 +10,7 @@
   // If you open index.html from the same server this is automatic.
   // Change ONLY if you host frontend and backend on different URLs.
   const SERVER_URL = window.location.origin;
-  const SHEETS_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwTMZNTleEa8JuQ_PeEvFkGl5MUv58-CDsinyyY4U1ZU1Pvimd2XKyD2tLB3SWDsZt7NA/exec';
 
 
 
