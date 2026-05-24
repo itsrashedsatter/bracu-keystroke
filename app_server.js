@@ -10,7 +10,12 @@
   // If you open index.html from the same server this is automatic.
   // Change ONLY if you host frontend and backend on different URLs.
   const SERVER_URL = window.location.origin;
+  const SHEETS_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
 
+
+
+
+   
   // ─── State ───
   const state = {
     sessions: JSON.parse(localStorage.getItem('kd_sessions') || '[]'),
@@ -245,22 +250,58 @@
   // ══════════════════════════════════════════
   //  SAVE TO SERVER (key change from old version)
   // ══════════════════════════════════════════
-  async function sendToServer(userId, sessionId, trial, keylog) {
-    try {
-      const device = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
-      const res = await fetch(`${SERVER_URL}/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, session_id: sessionId, trial, keylog, device }),
-      });
-      const json = await res.json();
-      if (json.status !== 'ok') throw new Error(json.message);
-      return json.rows_saved;
-    } catch (err) {
-      console.warn('Server save failed, data kept locally:', err.message);
-      return 0;
-    }
+ async function sendToServer(userId, sessionId, trial, keylog) {
+  try {
+    const device = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+
+    // Process keylog into rows
+    const rows = [];
+    let press_times = {}, prev_release = null, prev_press = null;
+
+    keylog.forEach(event => {
+      if (event.type === 'keydown') {
+        press_times[event.key] = event.time;
+        const flight = prev_release !== null ? +(event.time - prev_release).toFixed(2) : null;
+        const dd     = prev_press   !== null ? +(event.time - prev_press).toFixed(2)   : null;
+        prev_press = event.time;
+        press_times['_flight_' + event.key] = flight;
+        press_times['_dd_'     + event.key] = dd;
+      } else if (event.type === 'keyup') {
+        const p    = press_times[event.key];
+        const hold = p ? +(event.time - p).toFixed(2) : null;
+        prev_release = event.time;
+        rows.push({
+          user_id     : userId,
+          session_id  : sessionId,
+          trial,
+          device,
+          key         : event.key,
+          hold_time   : hold,
+          flight_time : press_times['_flight_' + event.key] ?? null,
+          DD_time     : press_times['_dd_'     + event.key] ?? null,
+          press_time  : p ? +p.toFixed(2) : null,
+          release_time: +event.time.toFixed(2),
+          timestamp   : new Date().toISOString()
+        });
+      }
+    });
+
+    if (rows.length === 0) return 0;
+
+    // Send to Google Sheets
+    const res = await fetch(SHEETS_URL, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ rows })
+    });
+    const json = await res.json();
+    return json.saved || 0;
+
+  } catch(err) {
+    console.warn('Sheets save failed:', err.message);
+    return 0;
   }
+}
 
   function saveCurrentAttempt() {
     const attempt = {
